@@ -1,14 +1,16 @@
-# main.py
 import time
 import cv2
 from core.camera import OpenCVCameraStream
 from core.eye_tracker import MediaPipeEyeTracker
+from core.visualizer import FrameVisualizer
 
 
 def main():
-  print("Инициализация камеры и нейросети...")
+  print("Инициализация камеры и нейросети")
   camera = OpenCVCameraStream(camera_index=0).start()
   tracker = MediaPipeEyeTracker()
+  visualizer = FrameVisualizer()
+
   time.sleep(0.3)
 
   print("Трекинг запущен. Нажми 'q' для выхода.")
@@ -20,22 +22,13 @@ def main():
 
       # Получаем нормализованные зрачки от модели
       pupils = tracker.process_frame(frame)
+      visualizer.draw_pupils(frame, pupils)
 
-      if pupils is not None:
-        h, w, _ = frame.shape
+      cv2.imshow("Eye Type Assistant", frame)
 
-        # Переводим нормализованные координаты [0.0, 1.0] в пиксели кадра для отрисовки
-        lx, ly = int(pupils.left[0] * w), int(pupils.left[1] * h)
-        rx, ry = int(pupils.right[0] * w), int(pupils.right[1] * h)
-
-        # Рисуем зеленые кружки в центрах зрачков
-        cv2.circle(frame, (lx, ly), 4, (0, 255, 0), -1)
-        cv2.circle(frame, (rx, ry), 4, (0, 255, 0), -1)
-
-      cv2.imshow("Eye Tracking Test", frame)
-
-      if cv2.waitKey(1) & 0xFF == ord("q"):
+      if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+      
   finally:
     print("Завершение работы...")
     camera.stop()
